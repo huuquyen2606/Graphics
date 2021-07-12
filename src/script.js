@@ -1,8 +1,10 @@
 import './style.css'
 import * as THREE from 'three'
 import { TeapotGeometry } from 'three/examples/jsm/geometries/TeapotGeometry'
+
 const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
+
 const pointLight = new THREE.PointLight(0xffffff, 0.1)
 pointLight.position.x = 2
 pointLight.position.y = 3

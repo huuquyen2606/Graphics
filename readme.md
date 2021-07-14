@@ -1,17 +1,16 @@
-# Three.js Starter
-Courtesy of Bruno Simon of https://threejs-journey.xyz/
+# Cài đặt yarn và nodejs
 
-## Setup
-Download [Node.js](https://nodejs.org/en/download/).
-Run this followed commands:
-
-``` bash
-# Install dependencies (only the first time)
+# Tải source về máy
+git clone https://github.com/huuquyen2606/Graphics.git
+cd Graphics
+# Cài đặt các package
 yarn install
-
-# Run the local server at localhost:8080
+# Chạy chương trình trên localhost:8080
 yarn dev
-
-# Build for production in the dist/ directory
+# Build production
 yarn build
-```
+
+# Link demo trên localhost: https://youtu.be/j7pfr6WQRVc
+
+# Link application: http://18521321-18521681-cs105.vync.online
+

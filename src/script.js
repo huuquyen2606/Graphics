@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TeapotGeometry } from 'three/examples/jsm/geometries/TeapotGeometry';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module'
-
+import { AsciiEffect } from 'three/examples/jsm/effects/AsciiEffect.js';
 class CustomSinCurve extends THREE.Curve {
 
 	constructor( scale = 1 ) {
@@ -29,15 +29,15 @@ let scene, renderer, mesh;
 let cameraPersp, cameraOrtho, currentCamera;
 let textureCube;
 let spotLight, lightHelper, shadowCameraHelper;
-let control, orbit;
-let wireMaterial, flatMaterial, gouraudMaterial, phongMaterial, texturedMaterial, reflectiveMaterial;
+let control, orbit, points;
+let wireMaterial, pointMaterial, flatMaterial, gouraudMaterial, phongMaterial, texturedMaterial, reflectiveMaterial;
 let boxGeo, sphereGeo, teapotGeo, torusGeo, torusKoxGeo,cylinderGeo, coneGeo, tubeGeo ;
 
 let params = {
     loadFile : function() { 
         document.getElementById('myInput').click();
     },
-    shape: 'cone',
+    shape: 'tube',
     material: 'flat',
     modeControl: 'translate',
     color: 0xffffff,
@@ -71,7 +71,11 @@ function init() {
 
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputEncoding = THREE.sRGBEncoding;
-
+    // effect = new AsciiEffect( renderer, ' .:-+*=%@#', { invert: true } );
+    // effect.setSize( window.innerWidth, window.innerHeight );
+    // effect.domElement.style.color = 'white';
+    // effect.domElement.style.backgroundColor = 'black';
+    
     // group camera
     const aspect = window.innerWidth / window.innerHeight;
     cameraPersp = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000 );
@@ -130,6 +134,7 @@ function init() {
     // default object settings
     // Material 
     wireMaterial = new THREE.MeshBasicMaterial( { color: params.color, wireframe: true , dithering: true } );
+    pointMaterial = new THREE.MeshBasicMaterial( { color: params.color, wireframe: true , dithering: true } );
     flatMaterial = new THREE.MeshPhongMaterial( { color: params.color, specular: 0x000000, flatShading: true, side: THREE.DoubleSide , dithering: true } );
     gouraudMaterial = new THREE.MeshLambertMaterial( { color: params.color, side: THREE.DoubleSide , dithering: true } );
     phongMaterial = new THREE.MeshPhongMaterial( { color: params.color, side: THREE.DoubleSide , dithering: true } );
@@ -158,16 +163,32 @@ function init() {
     teapotGeo = new TeapotGeometry(70, 5, true, true, true, true, true);
     torusGeo = new THREE.TorusGeometry(50, 30, 10, 50)
     cylinderGeo = new THREE.CylinderGeometry(60.0, 60.0, 140.0, 30);
-    coneGeo = new THREE.ConeGeometry( 80, 160, 32 );
+    coneGeo = new THREE.ConeGeometry( 80, 160, 64 );
     torusKoxGeo = new THREE.TorusKnotGeometry( 50, 30, 32, 8 );
     const path1 = new CustomSinCurve( 80 );
     tubeGeo =  new THREE.TubeGeometry( path1, 50, 30, 8, false );
 
     // Box with line
-    mesh = new THREE.Mesh(torusGeo, flatMaterial);
+    mesh = new THREE.Mesh(tubeGeo, flatMaterial);
     mesh.position.y = 40;
     mesh.castShadow = true;
     scene.add(mesh);
+
+    //
+    const pointsMaterial = new THREE.PointsMaterial( {
+
+        size: 5,
+        sizeAttenuation: false,
+        map: new THREE.TextureLoader().load( 'disc.png' ),
+        alphaTest: 0.5,
+        morphTargets: true
+
+    } );
+    points = new THREE.Points( mesh.geometry, pointsMaterial );
+    points.morphTargetInfluences = mesh.morphTargetInfluences;
+    points.morphTargetDictionary = mesh.morphTargetDictionary;
+    points.visible = false;
+    mesh.add( points );
 
     // controls
     orbit = new OrbitControls( currentCamera, renderer.domElement );
@@ -186,8 +207,9 @@ function init() {
     scene.add( control );
 
     // add GUI
-    gui.add( params, 'shape', { Box: 'box', Sphere: 'sphere', TeaPot: 'teapot', Torus: 'torus', TorusKnox: 'torusKnox', Cylinder: 'cylinder', Cone :'cone', Tube: 'tube'} ).name('Shape');
-    gui.add( params, 'material', { Wireframe: 'wireframe', Flat: 'flat', Smooth: 'smooth', Glossy: 'glossy' , Textured: 'textured' , Reflective: 'reflective'  } ).name('Material').onChange(function(val){
+    let ob = gui.addFolder('Object');
+    ob.add( params, 'shape', { Box: 'box', Sphere: 'sphere', TeaPot: 'teapot', Torus: 'torus', TorusKnox: 'torusKnox', Cylinder: 'cylinder', Cone :'cone', Tube: 'tube'} ).name('Shape');
+    ob.add( params, 'material', { Wireframe: 'wireframe', Point: 'point', Flat: 'flat', Smooth: 'smooth', Glossy: 'glossy' , Textured: 'textured' , Reflective: 'reflective'  } ).name('Material').onChange(function(val){
         if (val!= 'reflective'){
             ground.visible = true;
             grid.visible = true;
@@ -197,9 +219,17 @@ function init() {
             ground.visible = false;
         }
     });
-    gui.add(params, 'loadFile').name('LoadImage texture');
-    gui.addColor( params, 'color' ).name('Color object')
-    gui.add( params, 'modeControl', {Disable: 'disable', Translate: 'translate', Rotate: 'rotate', Scale: 'scale' } ).name('Mode Control');
+    ob.add(params, 'loadFile').name('LoadImage texture');
+    ob.addColor( params, 'color' ).name('Color object')
+    ob.add( params, 'animation' ).name('Animation').onChange(function(val){
+        if(!val){
+            mesh.position.set(0,40,0);
+            mesh.rotation.x = 0;
+            mesh.rotation.y = 0;
+        }
+    });
+    ob.add( params, 'modeControl', {Disable: 'disable', Translate: 'translate', Rotate: 'rotate', Scale: 'scale' } ).name('Mode Control');
+    // ob.open();
     const paramsLight = {
         'light color': spotLight.color.getHex(),
         intensity: spotLight.intensity,
@@ -247,7 +277,7 @@ function init() {
     // h.add( params, "cx", 0, 400, 20 ).name( "x" );
     // h.add( params, "cy", -300, 400, 20 ).name( "y" );
     // h.add( params, "cz", 0, 400, 20 ).name( "z" );
-    gui.add( params, 'animation' ).name('Animation');
+    
 
     // event listener
     document.getElementById('myInput').addEventListener('change', function(){
@@ -397,9 +427,18 @@ function simulate() {
             mesh.geometry = tubeGeo;
             break;  
     } 
+    if(params.material=='point'){
+        points.visible=true;
+        points.geometry = mesh.geometry;
+    }else{
+        points.visible=false;
+    }
     switch(params.material){
         case 'wireframe':
             mesh.material = wireMaterial;
+            break;
+        case 'point':
+            mesh.material = flatMaterial;
             break;
         case 'flat':
             mesh.material = flatMaterial;
@@ -429,33 +468,5 @@ function simulate() {
 
         mesh.rotation.x += 0.02;
         mesh.rotation.y += 0.03;
-    }else{
-        mesh.position.set(0,40,0);
-        mesh.rotation.x = 0;
-        mesh.rotation.y = 0;
     }
 }
-
-
-    // // box with points
-    // const amount = parseInt( window.location.search.substr( 1 ) ) || 5;
-    // const count = Math.pow( amount, 3 );
-    // const color = new THREE.Color(0x000000);
-    // const geometry = new THREE.IcosahedronGeometry( 3, 3 );
-    // const material = new THREE.MeshPhongMaterial();
-    // mesh = new THREE.InstancedMesh( geometry, material, count );
-    // mesh.name = 'object';
-    // let i = 0;
-    // const offset = ( amount - 1 ) / 2;
-    // const matrix = new THREE.Matrix4();
-    // for ( let x = 0; x < amount; x ++ ) {
-    //     for ( let y = 0; y < amount; y ++ ) {
-    //         for ( let z = 0; z < amount; z ++ ) {
-    //             matrix.setPosition( (offset - x)*50, (offset - y)*50, (offset - z)*50 );
-    //             mesh.setMatrixAt( i, matrix );
-    //             mesh.setColorAt( i, color );
-    //             i ++;
-    //         }
-    //     }
-    // }
-    // scene.add( mesh );

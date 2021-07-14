@@ -41,9 +41,12 @@ let params = {
     material: 'flat',
     modeControl: 'translate',
     color: 0xffffff,
-    lx:50,
+    lx:-50,
     ly:200,
     lz:50,
+    cx:400,
+    cy:200,
+    cz:400,
     animation: false,
 };
 // get canvas
@@ -93,7 +96,8 @@ function init() {
     spotLight.angle = Math.PI / 4;
     spotLight.penumbra = 0.1;
     spotLight.decay = 2;
-    spotLight.distance = 200;
+    spotLight.distance = 400;
+    spotLight.intensity = 5;
 
     spotLight.castShadow = true;
     spotLight.shadow.mapSize.width = 512;
@@ -119,6 +123,7 @@ function init() {
     
     const grid = new THREE.GridHelper( 2000, 50, 0x000000, 0x000000 );
     grid.material.opacity = 0.2;
+    grid.position.set( 0, - 50, 0 );
     grid.material.transparent = true;
     scene.add( grid );
 
@@ -149,7 +154,7 @@ function init() {
 
     // Geometry
     boxGeo = new THREE.BoxGeometry( 100, 100, 100 );
-    sphereGeo = new THREE.IcosahedronGeometry( 100, 3 );
+    sphereGeo = new THREE.SphereGeometry( 100, 32, 32 );
     teapotGeo = new TeapotGeometry(70, 5, true, true, true, true, true);
     torusGeo = new THREE.TorusGeometry(50, 30, 10, 50)
     cylinderGeo = new THREE.CylinderGeometry(60.0, 60.0, 140.0, 30);
@@ -209,11 +214,11 @@ function init() {
         spotLight.color.setHex( val );
         render();
     } );
-    h.add( paramsLight, 'intensity', 0, 2 ).onChange( function ( val ) {
+    h.add( paramsLight, 'intensity', 0, 10 ).onChange( function ( val ) {
         spotLight.intensity = val;
         render();
     } );
-    h.add( paramsLight, 'distance', 50, 400 ).onChange( function ( val ) {
+    h.add( paramsLight, 'distance', 200, 800 ).onChange( function ( val ) {
         spotLight.distance = val;
         render();
     } );
@@ -238,6 +243,10 @@ function init() {
     h.add( params, "lx", -100, 100, 10 ).name( "x" );
     h.add( params, "ly", 0, 400, 10 ).name( "y" );
     h.add( params, "lz", -100, 100, 10 ).name( "z" );
+    // h = gui.addFolder( "Camera direction" );
+    // h.add( params, "cx", 0, 400, 20 ).name( "x" );
+    // h.add( params, "cy", -300, 400, 20 ).name( "y" );
+    // h.add( params, "cz", 0, 400, 20 ).name( "z" );
     gui.add( params, 'animation' ).name('Animation');
 
     // event listener
@@ -411,6 +420,7 @@ function simulate() {
     }   
     mesh.material.color.setHex( params.color ) ;  
     spotLight.position.set(params.lx,params.ly,params.lz);
+    // currentCamera.position.set(params.cx,params.cy,params.cz);
     if (params.animation){
         const time = Date.now();
         mesh.position.x = Math.cos( time * 0.001 ) * 300;

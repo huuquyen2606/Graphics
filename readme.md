@@ -1,8 +1,7 @@
 # Cài đặt yarn và nodejs
 
 # Tải source về máy
-git clone https://github.com/huuquyen2606/Graphics.git
-cd Graphics
+git clone https://github.com/huuquyen2606/Graphics.git && cd Graphics
 # Cài đặt các package
 yarn install
 # Chạy chương trình trên localhost:8080
